@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alura.jdbc.factory.ConnectionFactory;
+import com.alura.jdbc.modelo.Producto;
 
 public class ProductoController {
 
@@ -34,7 +35,8 @@ public class ProductoController {
 			// Devolver el número de filas afectadas por la actualización
 			return updateCount;
 		} catch (SQLException e) {
-			// Si ocurre una excepción, se hace rollback de la transacción y se relanza la excepción
+			// Si ocurre una excepción, se hace rollback de la transacción y se relanza la
+			// excepción
 			// para que sea manejada por el código que llamó a este método
 			throw e;
 		}
@@ -69,99 +71,90 @@ public class ProductoController {
 	// >> LISTAR >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	/**
- * Obtiene la lista de todos los productos de la base de datos.
- * @return una lista de objetos Map que contiene los datos de cada producto.
- * @throws SQLException si ocurre un error al acceder a la base de datos.
- */
-public List<Map<String, String>> listar() throws SQLException {
-	
-	// Crea una nueva conexión a la BbDd
-	try (Connection conexion = new ConnectionFactory().recuperaConexion();
-			PreparedStatement statement = conexion
-					.prepareStatement("SELECT ID, NOMBRE, DESCRIPCION, CANTIDAD FROM PRODUCTO");
-			ResultSet resultset = statement.executeQuery()) {
+	 * Obtiene la lista de todos los productos de la base de datos.
+	 * 
+	 * @return una lista de objetos Map que contiene los datos de cada producto.
+	 * @throws SQLException si ocurre un error al acceder a la base de datos.
+	 */
+	public List<Map<String, String>> listar() throws SQLException {
 
-		// Crea un objeto ArrayList para almacenar los resultados
-		ArrayList<Map<String, String>> resultado = new ArrayList<>();
+		// Crea una nueva conexión a la BbDd
+		try (Connection conexion = new ConnectionFactory().recuperaConexion();
+				PreparedStatement statement = conexion
+						.prepareStatement("SELECT ID, NOMBRE, DESCRIPCION, CANTIDAD FROM PRODUCTO");
+				ResultSet resultset = statement.executeQuery()) {
 
-		// Itera sobre cada fila del objeto ResultSet y crea un objeto Map para
-		// almacenar los valores
-		while (resultset.next()) {
-			// Crea un objeto Map para almacenar los valores de cada fila
-			Map<String, String> fila = new HashMap<>();
+			// Crea un objeto ArrayList para almacenar los resultados
+			ArrayList<Map<String, String>> resultado = new ArrayList<>();
 
-			// Agrega los valores de cada columna de la fila al objeto Map
-			fila.put("ID", String.valueOf(resultset.getInt("ID")));
-			fila.put("NOMBRE", resultset.getString("NOMBRE"));
-			fila.put("DESCRIPCION", resultset.getString("DESCRIPCION"));
-			fila.put("CANTIDAD", String.valueOf(resultset.getInt("CANTIDAD")));
+			// Itera sobre cada fila del objeto ResultSet y crea un objeto Map para
+			// almacenar los valores
+			while (resultset.next()) {
+				// Crea un objeto Map para almacenar los valores de cada fila
+				Map<String, String> fila = new HashMap<>();
 
-			// Agrega el objeto Map a la lista de resultados
-			resultado.add(fila);
+				// Agrega los valores de cada columna de la fila al objeto Map
+				fila.put("ID", String.valueOf(resultset.getInt("ID")));
+				fila.put("NOMBRE", resultset.getString("NOMBRE"));
+				fila.put("DESCRIPCION", resultset.getString("DESCRIPCION"));
+				fila.put("CANTIDAD", String.valueOf(resultset.getInt("CANTIDAD")));
+
+				// Agrega el objeto Map a la lista de resultados
+				resultado.add(fila);
+			}
+
+			// Devuelve la lista de objetos Map<String, String>
+			return resultado;
 		}
-
-		// Devuelve la lista de objetos Map<String, String>
-		return resultado;
 	}
-}
-
 
 	// >> GUARDAR >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	public void guardar(Map<String, String> producto) throws SQLException {
+	public void guardar(Producto producto) throws SQLException {
 
 		// Establece los valores de los parámetros en la consulta SQL
-		String nombre = producto.get("NOMBRE");
-		String descripcion = producto.get("DESCRIPCION");
-		Integer cantidad = Integer.valueOf(producto.get("CANTIDAD"));
-		Integer maximoCantidad = 50;
-	
+		// String nombre = producto.getNombre();
+		// String descripcion = producto.getDescripcion();
+		// Integer cantidad = producto.getCantidad();
+
 		// Crea una conexión a la BbDd utilizando la clase ConnectionFactory
 		try (Connection conexion = new ConnectionFactory().recuperaConexion()) {
 			conexion.setAutoCommit(false);
-	
+
 			// Crea un objeto PreparedStatement a partir de la conexión
-			try (PreparedStatement statement = conexion.prepareStatement("INSERT INTO PRODUCTO" +
+			final PreparedStatement statement = conexion.prepareStatement("INSERT INTO PRODUCTO" +
 					"(nombre, descripcion, cantidad)"
 					+ "VALUES (?, ?, ?)",
-					Statement.RETURN_GENERATED_KEYS)) {
-	
-				try {
-					do {
-						// Calcula la cantidad de productos a guardar en esta iteración
-						int cantidadParaGuardar = Math.min(cantidad, maximoCantidad);
-	
-						// Ejecuta el registro de un producto en la BbDd con los datos proporcionados
-						ejecutaRegistro(nombre, descripcion, cantidadParaGuardar, statement);
-	
-						// Actualiza la cantidad restante de productos a guardar
-						cantidad -= maximoCantidad;
-	
-					} while (cantidad > 0);
-	
-					// Si no hubo excepciones, se hace commit de la transacción
-					conexion.commit();
-					System.out.println("COMMIT");
-	
-				} catch (SQLException e) {
-	
-					// Si ocurre una excepción, se hace rollback de la transacción
-					conexion.rollback();
-					System.out.println("ROLLBACK");
-					throw e;
-				}
+					Statement.RETURN_GENERATED_KEYS);
+
+			try (statement) {
+				// Ejecuta el registro de un producto en la BbDd con los datos proporcionados
+				ejecutaRegistro(producto, statement);
+
+				// ejecutaRegistro(nombre, descripcion, cantidadParaGuardar, statement);
+
+				// Si no hubo excepciones, se hace commit de la transacción
+				conexion.commit();
+				System.out.println("COMMIT");
+			} catch (Exception e) {
+
+				// Si ocurre una excepción, se hace rollback de la transacción
+				conexion.rollback();
+				System.out.println("ROLLBACK");
+				throw e;
 			}
 		}
 	}
 
-// Este método establece los valores de los parámetros en la consulta SQL proporcionada,
-// ejecuta la consulta y recupera las claves generadas por la inserción.
-private void ejecutaRegistro(String nombre, String descripcion, Integer cantidad, PreparedStatement statement)
+	// Este método establece los valores de los parámetros en la consulta SQL
+	// proporcionada, ejecuta la consulta y recupera las claves generadas por la
+	// inserción.
+	private void ejecutaRegistro(Producto producto, PreparedStatement statement)
 			throws SQLException {
 
-		statement.setString(1, nombre);
-		statement.setString(2, descripcion);
-		statement.setInt(3, cantidad);
+		statement.setString(1, producto.getNombre());
+		statement.setString(2, producto.getDescripcion());
+		statement.setInt(3, producto.getCantidad());
 
 		// Ejecuta la consulta SQL
 		statement.execute();
@@ -173,10 +166,64 @@ private void ejecutaRegistro(String nombre, String descripcion, Integer cantidad
 
 			// Imprime las claves generadas por la inserción
 			while (resultset.next()) {
+
+				producto.setId(resultset.getInt(1));
+
 				System.out.println(String.format(
-						"Fue insertado el producto de ID %d",
-						resultset.getInt(1)));
+						"Fue insertado el producto %s", producto));
 			}
 		}
 	}
 }
+
+/*
+ * public void guardar(Map<String, String> producto) throws SQLException {
+ * 
+ * Establece los valores de los parámetros en la consulta SQL
+ * String nombre = producto.get("NOMBRE");
+ * String descripcion = producto.get("DESCRIPCION");
+ * Integer cantidad = Integer.valueOf(producto.get("CANTIDAD"));
+ * Integer maximoCantidad = 50;
+ * 
+ * try {
+ * do {
+ * // Calcula la cantidad de productos a guardar en esta iteración
+ * int cantidadParaGuardar = Math.min(cantidad, maximoCantidad);
+ * 
+ * // Ejecuta el registro de un producto en la BbDd con los datos proporcionados
+ * ejecutaRegistro(producto, statement);
+ * 
+ * // ejecutaRegistro(nombre, descripcion, cantidadParaGuardar, statement);
+ * 
+ * // Actualiza la cantidad restante de productos a guardar
+ * cantidad -= maximoCantidad;
+ * 
+ * } while (cantidad > 0);
+ */
+
+/*
+ * private void ejecutaRegistro(String nombre, String descripcion, Integer
+ * cantidad, PreparedStatement statement) throws SQLException {
+ * 
+ * statement.setString(1, nombre);
+ * statement.setString(2, descripcion);
+ * statement.setInt(3, cantidad);
+ * 
+ * // Ejecuta la consulta SQL
+ * statement.execute();
+ * 
+ * // Recupera las claves generadas por la inserción
+ * final ResultSet resultset = statement.getGeneratedKeys();
+ * 
+ * try (resultset) {
+ * 
+ * // Imprime las claves generadas por la inserción
+ * while (resultset.next()) {
+ * System.out.println(String.format(
+ * "Fue insertado el producto de ID %d",
+ * resultset.getInt(1)));
+ * }
+ * }
+ * }
+ * }
+ */

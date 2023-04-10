@@ -19,6 +19,7 @@ import javax.swing.table.DefaultTableModel;
 
 import com.alura.jdbc.controller.CategoriaController;
 import com.alura.jdbc.controller.ProductoController;
+import com.alura.jdbc.modelo.Producto;
 
 public class ControlDeStockFrame extends JFrame {
 
@@ -289,11 +290,7 @@ public class ControlDeStockFrame extends JFrame {
       return;
     }
 
-    var producto = new HashMap<String, String>();
-    producto.put("NOMBRE", textoNombre.getText());
-    producto.put("DESCRIPCION", textoDescripcion.getText());
-    producto.put("CANTIDAD", String.valueOf(cantidadInt));
-    var categoria = comboCategoria.getSelectedItem();
+    var producto = new Producto(textoNombre.getText(), textoDescripcion.getText(), cantidadInt);
 
     try {
       this.productoController.guardar(producto);
@@ -314,3 +311,41 @@ public class ControlDeStockFrame extends JFrame {
     this.comboCategoria.setSelectedIndex(0);
   }
 }
+
+
+
+/*
+ * private void guardar() {
+    if (textoNombre.getText().isBlank() || textoDescripcion.getText().isBlank()) {
+      JOptionPane.showMessageDialog(this, "Los campos Nombre y Descripción son requeridos.");
+      return;
+    }
+
+    Integer cantidadInt;
+
+    try {
+      cantidadInt = Integer.parseInt(textoCantidad.getText());
+    } catch (NumberFormatException e) {
+      JOptionPane.showMessageDialog(this, String
+          .format("El campo cantidad debe ser numérico dentro del rango %d y %d.", 0, Integer.MAX_VALUE));
+      return;
+    }
+
+    var producto = new HashMap<String, String>();
+    producto.put("NOMBRE", textoNombre.getText());
+    producto.put("DESCRIPCION", textoDescripcion.getText());
+    producto.put("CANTIDAD", String.valueOf(cantidadInt));
+    var categoria = comboCategoria.getSelectedItem();
+
+    try {
+      this.productoController.guardar(producto);
+    } catch (SQLException e) {
+
+      throw new RuntimeException();
+    }
+
+    JOptionPane.showMessageDialog(this, "Registrado con éxito!");
+
+    this.limpiarFormulario();
+  }
+ */
